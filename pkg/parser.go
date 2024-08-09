@@ -25,7 +25,7 @@ func (t NodeType) String() string {
 }
 
 var (
-	Parser *grammar.Parser[NodeType, token_type]
+	Parser *grammar.Parser[*Node, token_type]
 )
 
 func init() {

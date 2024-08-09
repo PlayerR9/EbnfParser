@@ -9,15 +9,15 @@ import (
 
 var (
 	// ast_builder is the AST builder of the parser.
-	ast_builder *ast.Make[*ast.Node[NodeType], token_type]
+	ast_builder *ast.Make[*Node, token_type]
 )
 
 func init() {
-	ast_builder = ast.NewMake[*ast.Node[NodeType], token_type]()
+	ast_builder = ast.NewMake[*Node, token_type]()
 
-	parts := ast.NewPartsBuilder[*ast.Node[NodeType]]()
+	parts := ast.NewPartsBuilder[*Node]()
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		root := prev.(*gr.Token[token_type])
@@ -35,7 +35,7 @@ func init() {
 		return children[0], nil
 	})
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		child := prev.(*gr.Token[token_type])
@@ -49,7 +49,7 @@ func init() {
 			return nil, err
 		}
 
-		a.SetNode(ast.NewNode(IdentifierNode, data))
+		a.SetNode(NewNode(IdentifierNode, data))
 
 		return nil, nil
 	})
@@ -57,7 +57,7 @@ func init() {
 	ast_builder.AddEntry(ntk_Identifier, parts.Build())
 	parts.Reset()
 
-	f1 := func(children []*gr.Token[token_type]) ([]*ast.Node[NodeType], error) {
+	f1 := func(children []*gr.Token[token_type]) ([]*Node, error) {
 		switch len(children) {
 		case 2:
 			// OrExpr = Identifier pipe (OrExpr) .
@@ -71,7 +71,7 @@ func init() {
 		case 3:
 			// OrExpr = Identifier pipe Identifier .
 
-			var nodes []*ast.Node[NodeType]
+			var nodes []*Node
 
 			sub_nodes, err := ast_builder.ApplyToken(children[0])
 			if len(sub_nodes) > 0 {
@@ -97,13 +97,13 @@ func init() {
 		}
 	}
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		root := prev.(*gr.Token[token_type])
 		// root := luc.AssertConv[*gr.Token[TokenType]](prev, "prev")
 
-		a.SetNode(ast.NewNode(OrNode, ""))
+		a.SetNode(NewNode(OrNode, ""))
 
 		nodes, err := ast.LeftRecursive(root, ntk_OrExpr, f1)
 
@@ -125,7 +125,7 @@ func init() {
 	ast_builder.AddEntry(ntk_OrExpr, parts.Build())
 	parts.Reset()
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		root := prev.(*gr.Token[token_type])
@@ -139,7 +139,7 @@ func init() {
 		return children, nil
 	})
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		children := prev.([]*gr.Token[token_type])
@@ -162,7 +162,7 @@ func init() {
 		case 3:
 			// Rhs = op_paren OrExpr cl_paren .
 
-			a.SetNode(ast.NewNode(OrNode, ""))
+			a.SetNode(NewNode(OrNode, ""))
 
 			sub_nodes, err := ast_builder.ApplyToken(children[1])
 			a_nodes := make([]ast.Noder, 0, len(sub_nodes))
@@ -186,7 +186,7 @@ func init() {
 	ast_builder.AddEntry(ntk_Rhs, parts.Build())
 	parts.Reset()
 
-	f2 := func(children []*gr.Token[token_type]) ([]*ast.Node[NodeType], error) {
+	f2 := func(children []*gr.Token[token_type]) ([]*Node, error) {
 		nodes, err := ast_builder.ApplyToken(children[0])
 		if err != nil {
 			return nodes, err
@@ -195,7 +195,7 @@ func init() {
 		return nodes, nil
 	}
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		root := prev.(*gr.Token[token_type])
@@ -217,7 +217,7 @@ func init() {
 	ast_builder.AddEntry(ntk_RhsCls, parts.Build())
 	parts.Reset()
 
-	f3 := func(children []*gr.Token[token_type]) ([]*ast.Node[NodeType], error) {
+	f3 := func(children []*gr.Token[token_type]) ([]*Node, error) {
 		switch len(children) {
 		case 3:
 			// RuleLine = newline tab dot  .
@@ -228,7 +228,7 @@ func init() {
 		case 4:
 			// RuleLine = newline tab pipe RhsCls (RuleLine) .
 
-			n := ast.NewNode(OrNode, "")
+			n := NewNode(OrNode, "")
 
 			sub_nodes, err := ast_builder.ApplyToken(children[3])
 			a_nodes := make([]ast.Noder, 0, len(sub_nodes))
@@ -240,16 +240,16 @@ func init() {
 			n.AddChildren(a_nodes)
 
 			if err != nil {
-				return []*ast.Node[NodeType]{n}, err
+				return []*Node{n}, err
 			}
 
-			return []*ast.Node[NodeType]{n}, nil
+			return []*Node{n}, nil
 		default:
 			return nil, fmt.Errorf("expected 3 or 4 children, got %d children instead", len(children))
 		}
 	}
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		root := prev.(*gr.Token[token_type])
@@ -268,7 +268,7 @@ func init() {
 	ast_builder.AddEntry(ntk_RuleLine, parts.Build())
 	parts.Reset()
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		root := prev.(*gr.Token[token_type])
@@ -282,7 +282,7 @@ func init() {
 		return children, nil
 	})
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		children := prev.([]*gr.Token[token_type])
@@ -297,7 +297,7 @@ func init() {
 		case 4:
 			// Rule = uppercase_id equal RhsCls dot .
 
-			a.SetNode(ast.NewNode(RuleNode, lhs))
+			a.SetNode(NewNode(RuleNode, lhs))
 
 			sub_nodes, err := ast_builder.ApplyToken(children[2])
 			a_nodes := make([]ast.Noder, 0, len(sub_nodes))
@@ -314,7 +314,7 @@ func init() {
 		case 6:
 			// Rule = uppercase_id newline tab equal RhsCls RuleLine .
 
-			n := ast.NewNode(OrNode, "")
+			n := NewNode(OrNode, "")
 
 			sub_nodes, err := ast_builder.ApplyToken(children[4])
 			a_nodes := make([]ast.Noder, 0, len(sub_nodes))
@@ -325,10 +325,10 @@ func init() {
 
 			n.AddChildren(a_nodes)
 
-			a.AppendNodes([]*ast.Node[NodeType]{n})
+			a.AppendNodes([]*Node{n})
 
 			if err != nil {
-				_ = a.DoForEach(func(n *ast.Node[NodeType]) error {
+				_ = a.DoForEach(func(n *Node) error {
 					n.Data = lhs
 					n.Type = RuleNode
 
@@ -341,7 +341,7 @@ func init() {
 			sub_nodes, err = ast_builder.ApplyToken(children[5])
 			a.AppendNodes(sub_nodes)
 
-			_ = a.DoForEach(func(n *ast.Node[NodeType]) error {
+			_ = a.DoForEach(func(n *Node) error {
 				n.Data = lhs
 				n.Type = RuleNode
 
@@ -362,7 +362,7 @@ func init() {
 	ast_builder.AddEntry(ntk_Rule, parts.Build())
 	parts.Reset()
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		root := prev.(*gr.Token[token_type])
@@ -370,7 +370,7 @@ func init() {
 
 		// Source = Source1 EOF .
 
-		a.SetNode(ast.NewNode(SourceNode, ""))
+		a.SetNode(NewNode(SourceNode, ""))
 
 		children, err := ast.ExtractChildren(root)
 		if err != nil {
@@ -384,7 +384,7 @@ func init() {
 		return children[0], nil
 	})
 
-	f4 := func(children []*gr.Token[token_type]) ([]*ast.Node[NodeType], error) {
+	f4 := func(children []*gr.Token[token_type]) ([]*Node, error) {
 		nodes, err := ast_builder.ApplyToken(children[0])
 		if err != nil {
 			return nodes, err
@@ -393,7 +393,7 @@ func init() {
 		return nodes, nil
 	}
 
-	parts.Add(func(a *ast.Result[*ast.Node[NodeType]], prev any) (any, error) {
+	parts.Add(func(a *ast.Result[*Node], prev any) (any, error) {
 		// luc.AssertNil(a, "a")
 
 		child := prev.(*gr.Token[token_type])
